@@ -7,6 +7,7 @@ Gem::Specification.new do |spec|
   spec.version       = "0.0.1"
   spec.authors       = ["Takuya ASADA"]
   spec.email         = ["syuu@dokukino.com"]
+  spec.extensions    = ["ext/virtualmachine/extconf.rb"]
   spec.description   = "Run your asm code on VMM instantly, using ruby"
   spec.summary       = "Run your asm code on VMM instantly, using ruby"
   spec.homepage      = "https://github.com/syuu1228/ruby-virtualmachine"

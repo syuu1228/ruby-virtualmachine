@@ -1,7 +1,7 @@
 require 'virtualmachine'
 
 vm0 = VirtualMachine.new('vm0', 128)
-vm0.load_sam(<<EOS)
+vm0.load_asm(<<EOS)
 	mov dx, 3F8h
 	mov al, 2Ah
 loop:
