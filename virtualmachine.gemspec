@@ -1,17 +1,16 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'virtualmachine/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "virtualmachine"
   spec.version       = "0.0.1"
   spec.authors       = ["Takuya ASADA"]
   spec.email         = ["syuu@dokukino.com"]
-  spec.description   = %q{}
-  spec.summary       = %q{}
-  spec.homepage      = ""
-  spec.license       = "MIT"
+  spec.description   = "Run your asm code on VMM instantly, using ruby"
+  spec.summary       = "Run your asm code on VMM instantly, using ruby"
+  spec.homepage      = "https://github.com/syuu1228/ruby-virtualmachine"
+  spec.license       = "BSDL"
 
   spec.files         = `git ls-files`.split($/)
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
