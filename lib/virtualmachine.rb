@@ -8,6 +8,6 @@ class VirtualMachine
 	end
 
 	def run
-		system("/usr/sbin/bhyve -c 1 -m #{@memsize} -s 0:0,hostbridge -S 31,uart,stdio #{@vmname}")
+		system("/usr/sbin/bhyve -H -c 1 -m #{@memsize} -s 0:0,hostbridge -S 31,uart,stdio -e #{@vmname}")
 	end
 end

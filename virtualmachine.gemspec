@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "virtualmachine"
-  spec.version       = "0.0.1"
+  spec.version       = "0.0.3"
   spec.authors       = ["Takuya ASADA"]
   spec.email         = ["syuu@dokukino.com"]
   spec.extensions    = ["ext/virtualmachine/extconf.rb"]
