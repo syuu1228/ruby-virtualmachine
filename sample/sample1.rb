@@ -19,3 +19,6 @@ loop:
 	out dx, al
 EOS
 vm0.run
+puts "rax:#{vm0.rax}"
+puts "rdx:#{vm0.rdx}"
+puts "rip:#{vm0.rip}"

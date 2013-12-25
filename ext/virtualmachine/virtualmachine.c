@@ -242,9 +242,9 @@ VALUE virtualmachine_load_binary(VALUE self, VALUE program)
 	Data_Get_Struct(vctx, struct vmctx, ctx);
 	if (!ctx)
 		rb_bug("ctx is null");
-	entry = vm_map_gpa(ctx, ADDR_ENTRY, RSTRING_LEN(program));
+	entry = _vm_map_gpa(ctx, ADDR_ENTRY, RSTRING_LEN(program));
 	memcpy(entry, StringValuePtr(program), RSTRING_LEN(program));
-	vm_set_register(ctx, 0, VM_REG_GUEST_RIP, ADDR_ENTRY);
+	_vm_set_register(ctx, 0, VM_REG_GUEST_RIP, ADDR_ENTRY);
 	return Qnil;
 }
 
@@ -259,11 +259,128 @@ VALUE virtualmachine_destroy(VALUE self)
 	return Qnil;
 }
 
+#define GETREG(func, reg) \
+static VALUE func(VALUE self) \
+{ \
+	VALUE vctx = rb_iv_get(self, "@ctx"); \
+	struct vmctx *ctx; \
+	uint64_t value; \
+	Data_Get_Struct(vctx, struct vmctx, ctx); \
+	_vm_get_register(ctx, 0, reg, &value); \
+	return ULL2NUM(value); \
+}
+
+#define SETREG(func, reg) \
+static VALUE func(VALUE self, VALUE value) \
+{ \
+	VALUE vctx = rb_iv_get(self, "@ctx"); \
+	struct vmctx *ctx; \
+	Data_Get_Struct(vctx, struct vmctx, ctx); \
+	_vm_set_register(ctx, 0, reg, NUM2ULL(value)); \
+	return Qnil; \
+}
+
+GETREG(virtualmachine_get_rax, VM_REG_GUEST_RAX);
+GETREG(virtualmachine_get_rbx, VM_REG_GUEST_RBX);
+GETREG(virtualmachine_get_rcx, VM_REG_GUEST_RCX);
+GETREG(virtualmachine_get_rdx, VM_REG_GUEST_RDX);
+GETREG(virtualmachine_get_rsi, VM_REG_GUEST_RSI);
+GETREG(virtualmachine_get_rdi, VM_REG_GUEST_RDI);
+GETREG(virtualmachine_get_rbp, VM_REG_GUEST_RBP);
+GETREG(virtualmachine_get_r8, VM_REG_GUEST_R8);
+GETREG(virtualmachine_get_r9, VM_REG_GUEST_R9);
+GETREG(virtualmachine_get_r10, VM_REG_GUEST_R10);
+GETREG(virtualmachine_get_r11, VM_REG_GUEST_R11);
+GETREG(virtualmachine_get_r12, VM_REG_GUEST_R12);
+GETREG(virtualmachine_get_r13, VM_REG_GUEST_R13);
+GETREG(virtualmachine_get_r14, VM_REG_GUEST_R14);
+GETREG(virtualmachine_get_r15, VM_REG_GUEST_R15);
+GETREG(virtualmachine_get_cr0, VM_REG_GUEST_CR0);
+GETREG(virtualmachine_get_cr3, VM_REG_GUEST_CR3);
+GETREG(virtualmachine_get_cr4, VM_REG_GUEST_CR4);
+GETREG(virtualmachine_get_dr7, VM_REG_GUEST_DR7);
+GETREG(virtualmachine_get_rsp, VM_REG_GUEST_RSP);
+GETREG(virtualmachine_get_rip, VM_REG_GUEST_RIP);
+GETREG(virtualmachine_get_rflags, VM_REG_GUEST_RFLAGS);
+GETREG(virtualmachine_get_efer, VM_REG_GUEST_EFER);
+
+SETREG(virtualmachine_set_rax, VM_REG_GUEST_RAX);
+SETREG(virtualmachine_set_rbx, VM_REG_GUEST_RBX);
+SETREG(virtualmachine_set_rcx, VM_REG_GUEST_RCX);
+SETREG(virtualmachine_set_rdx, VM_REG_GUEST_RDX);
+SETREG(virtualmachine_set_rsi, VM_REG_GUEST_RSI);
+SETREG(virtualmachine_set_rdi, VM_REG_GUEST_RDI);
+SETREG(virtualmachine_set_rbp, VM_REG_GUEST_RBP);
+SETREG(virtualmachine_set_r8, VM_REG_GUEST_R8);
+SETREG(virtualmachine_set_r9, VM_REG_GUEST_R9);
+SETREG(virtualmachine_set_r10, VM_REG_GUEST_R10);
+SETREG(virtualmachine_set_r11, VM_REG_GUEST_R11);
+SETREG(virtualmachine_set_r12, VM_REG_GUEST_R12);
+SETREG(virtualmachine_set_r13, VM_REG_GUEST_R13);
+SETREG(virtualmachine_set_r14, VM_REG_GUEST_R14);
+SETREG(virtualmachine_set_r15, VM_REG_GUEST_R15);
+SETREG(virtualmachine_set_cr0, VM_REG_GUEST_CR0);
+SETREG(virtualmachine_set_cr3, VM_REG_GUEST_CR3);
+SETREG(virtualmachine_set_cr4, VM_REG_GUEST_CR4);
+SETREG(virtualmachine_set_dr7, VM_REG_GUEST_DR7);
+SETREG(virtualmachine_set_rsp, VM_REG_GUEST_RSP);
+SETREG(virtualmachine_set_rip, VM_REG_GUEST_RIP);
+SETREG(virtualmachine_set_rflags, VM_REG_GUEST_RFLAGS);
+SETREG(virtualmachine_set_efer, VM_REG_GUEST_EFER);
+
 void Init_virtualmachine(void)
 {
 	rb_cVirtualMachine = rb_define_class("VirtualMachine", rb_cObject);
 	rb_cVMCtx = rb_define_class("VMCtx", rb_cObject);
 	rb_define_method(rb_cVirtualMachine, "initialize", virtualmachine_initialize, 2);
 	rb_define_method(rb_cVirtualMachine, "load_binary", virtualmachine_load_binary, 1);
+	rb_define_method(rb_cVirtualMachine, "rax", virtualmachine_get_rax, 0);
+	rb_define_method(rb_cVirtualMachine, "rbx", virtualmachine_get_rbx, 0);
+	rb_define_method(rb_cVirtualMachine, "rcx", virtualmachine_get_rcx, 0);
+	rb_define_method(rb_cVirtualMachine, "rdx", virtualmachine_get_rdx, 0);
+	rb_define_method(rb_cVirtualMachine, "rsi", virtualmachine_get_rsi, 0);
+	rb_define_method(rb_cVirtualMachine, "rdi", virtualmachine_get_rdi, 0);
+	rb_define_method(rb_cVirtualMachine, "rbp", virtualmachine_get_rbp, 0);
+	rb_define_method(rb_cVirtualMachine, "r8", virtualmachine_get_r8, 0);
+	rb_define_method(rb_cVirtualMachine, "r9", virtualmachine_get_r9, 0);
+	rb_define_method(rb_cVirtualMachine, "r10", virtualmachine_get_r10, 0);
+	rb_define_method(rb_cVirtualMachine, "r11", virtualmachine_get_r11, 0);
+	rb_define_method(rb_cVirtualMachine, "r12", virtualmachine_get_r12, 0);
+	rb_define_method(rb_cVirtualMachine, "r13", virtualmachine_get_r13, 0);
+	rb_define_method(rb_cVirtualMachine, "r14", virtualmachine_get_r14, 0);
+	rb_define_method(rb_cVirtualMachine, "r15", virtualmachine_get_r15, 0);
+	rb_define_method(rb_cVirtualMachine, "cr0", virtualmachine_get_cr0, 0);
+	rb_define_method(rb_cVirtualMachine, "cr3", virtualmachine_get_cr3, 0);
+	rb_define_method(rb_cVirtualMachine, "cr4", virtualmachine_get_cr4, 0);
+	rb_define_method(rb_cVirtualMachine, "dr7", virtualmachine_get_dr7, 0);
+	rb_define_method(rb_cVirtualMachine, "rsp", virtualmachine_get_rsp, 0);
+	rb_define_method(rb_cVirtualMachine, "rip", virtualmachine_get_rip, 0);
+	rb_define_method(rb_cVirtualMachine, "rflags", virtualmachine_get_rflags, 0);
+	rb_define_method(rb_cVirtualMachine, "efer", virtualmachine_get_efer, 0);
+
+	rb_define_method(rb_cVirtualMachine, "=rax", virtualmachine_set_rax, 1);
+	rb_define_method(rb_cVirtualMachine, "=rbx", virtualmachine_set_rbx, 1);
+	rb_define_method(rb_cVirtualMachine, "=rcx", virtualmachine_set_rcx, 1);
+	rb_define_method(rb_cVirtualMachine, "=rdx", virtualmachine_set_rdx, 1);
+	rb_define_method(rb_cVirtualMachine, "=rsi", virtualmachine_set_rsi, 1);
+	rb_define_method(rb_cVirtualMachine, "=rdi", virtualmachine_set_rdi, 1);
+	rb_define_method(rb_cVirtualMachine, "=rbp", virtualmachine_set_rbp, 1);
+	rb_define_method(rb_cVirtualMachine, "=r8", virtualmachine_set_r8, 1);
+	rb_define_method(rb_cVirtualMachine, "=r9", virtualmachine_set_r9, 1);
+	rb_define_method(rb_cVirtualMachine, "=r10", virtualmachine_set_r10, 1);
+	rb_define_method(rb_cVirtualMachine, "=r11", virtualmachine_set_r11, 1);
+	rb_define_method(rb_cVirtualMachine, "=r12", virtualmachine_set_r12, 1);
+	rb_define_method(rb_cVirtualMachine, "=r13", virtualmachine_set_r13, 1);
+	rb_define_method(rb_cVirtualMachine, "=r14", virtualmachine_set_r14, 1);
+	rb_define_method(rb_cVirtualMachine, "=r15", virtualmachine_set_r15, 1);
+	rb_define_method(rb_cVirtualMachine, "=cr0", virtualmachine_set_cr0, 1);
+	rb_define_method(rb_cVirtualMachine, "=cr3", virtualmachine_set_cr3, 1);
+	rb_define_method(rb_cVirtualMachine, "=cr4", virtualmachine_set_cr4, 1);
+	rb_define_method(rb_cVirtualMachine, "=dr7", virtualmachine_set_dr7, 1);
+	rb_define_method(rb_cVirtualMachine, "=rsp", virtualmachine_set_rsp, 1);
+	rb_define_method(rb_cVirtualMachine, "=rip", virtualmachine_set_rip, 1);
+	rb_define_method(rb_cVirtualMachine, "=rflags", virtualmachine_set_rflags, 1);
+	rb_define_method(rb_cVirtualMachine, "=efer", virtualmachine_set_efer, 1);
+
 	rb_define_method(rb_cVirtualMachine, "destroy", virtualmachine_destroy, 0);
 }
