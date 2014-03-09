@@ -106,6 +106,11 @@ VALUE vmctx_free(VALUE self)
 	return Qnil;
 }
 
+VALUE vme_free(VALUE self)
+{
+	return Qnil;
+}
+
 int _vm_create(const char *name)
 {
 	int error = vm_create(name);
@@ -162,24 +167,35 @@ int _vm_get_register(struct vmctx *ctx, int vcpu, int reg, uint64_t *retval)
 {
 	int error = vm_get_register(ctx, vcpu, reg, retval);
 	if (error)
-		rb_raise(rb_eException, "vm_get_register failed error=%d",
-			error);
+		rb_raise(rb_eException, "vm_get_register failed error=%d", error);
+	return error;
+}
+
+int _vm_run(struct vmctx *ctx, int vcpu, uint64_t rip, struct vmexit *vmexit)
+{
+	int error = vm_run(ctx, vcpu, rip, vmexit);
+	if (error)
+		rb_raise(rb_eException, "vm_get_register failed error=%d", error);
 	return error;
 }
 
 VALUE virtualmachine_initialize(VALUE self, VALUE vmname, VALUE memsize)
 {
-	VALUE vctx;
+	VALUE vctx, vvme;
 	struct vmctx *ctx;
+	struct vm_exit *vme;
 	uint64_t *gdt, *pt4, *pt3, *pt2;
 	int i, err;
 
 	_vm_create(StringValuePtr(vmname));
 	ctx = _vm_open(StringValuePtr(vmname));
 	vctx = Data_Wrap_Struct(rb_cVMCtx, NULL, vmctx_free, ctx);
+	vme = (struct vm_exit *)calloc(1, sizeof(*vme));
+	vvme = Data_Wrap_Struct(rb_cVMCtx, NULL, vme_free, vme);
 	rb_iv_set(self, "@ctx", vctx);
 	rb_iv_set(self, "@vmname", vmname);
 	rb_iv_set(self, "@memsize", memsize);
+	rb_iv_set(self, "@vmexit", vvme);
 	_vm_setup_memory(ctx, FIX2INT(memsize) * MB, VM_MMAP_ALL);
 
 	pt4 = _vm_map_gpa(ctx, ADDR_PT4, sizeof(uint64_t) * 512);
@@ -257,6 +273,127 @@ VALUE virtualmachine_destroy(VALUE self)
 		rb_bug("ctx is null");
 	vm_destroy(ctx);
 	return Qnil;
+}
+
+VALUE virtualmachine_run(VALUE self, VALUE rip)
+{
+	VALUE vctx = rb_iv_get(self, "@ctx");
+	VALUE vvme = rb_iv_get(self, "@vmexit");
+	struct vmctx *ctx;
+	struct vm_exit *vme;
+	Data_Get_Struct(vctx, struct vmctx, ctx);
+	if (!ctx)
+		rb_bug("ctx is null");
+	Data_Get_Struct(vvme, struct vm_exit, vme);
+	if (!vme)
+		tb_bug("vme is null");
+	_vm_run(ctx, 0, NUM2ULL(rip), vme);
+	return Qnil;
+}
+
+VALUE virtualmachine_vme_exitcode(VALUE self)
+{
+	VALUE vctx = rb_iv_get(self, "@ctx");
+	VALUE vvme = rb_iv_get(self, "@vmexit");
+	struct vmctx *ctx;
+	struct vm_exit *vme;
+	Data_Get_Struct(vctx, struct vmctx, ctx);
+	if (!ctx)
+		rb_bug("ctx is null");
+	Data_Get_Struct(vvme, struct vm_exit, vme);
+	if (!vme)
+		tb_bug("vme is null");
+	return INT2FIX(vme->exitcode);
+}
+
+VALUE virtualmachine_vme_inst_length(VALUE self)
+{
+	VALUE vctx = rb_iv_get(self, "@ctx");
+	VALUE vvme = rb_iv_get(self, "@vmexit");
+	struct vmctx *ctx;
+	struct vm_exit *vme;
+	Data_Get_Struct(vctx, struct vmctx, ctx);
+	if (!ctx)
+		rb_bug("ctx is null");
+	Data_Get_Struct(vvme, struct vm_exit, vme);
+	if (!vme)
+		tb_bug("vme is null");
+	return INT2FIX(vme->inst_length);
+}
+
+VALUE virtualmachine_vme_rip(VALUE self)
+{
+	VALUE vctx = rb_iv_get(self, "@ctx");
+	VALUE vvme = rb_iv_get(self, "@vmexit");
+	struct vmctx *ctx;
+	struct vm_exit *vme;
+	Data_Get_Struct(vctx, struct vmctx, ctx);
+	if (!ctx)
+		rb_bug("ctx is null");
+	Data_Get_Struct(vvme, struct vm_exit, vme);
+	if (!vme)
+		tb_bug("vme is null");
+	return ULL2NUM(vme->rip);
+}
+
+VALUE virtualmachine_vme_bytes(VALUE self)
+{
+	VALUE vctx = rb_iv_get(self, "@ctx");
+	VALUE vvme = rb_iv_get(self, "@vmexit");
+	struct vmctx *ctx;
+	struct vm_exit *vme;
+	Data_Get_Struct(vctx, struct vmctx, ctx);
+	if (!ctx)
+		rb_bug("ctx is null");
+	Data_Get_Struct(vvme, struct vm_exit, vme);
+	if (!vme)
+		tb_bug("vme is null");
+	return INT2FIX(vme->u.inout.bytes);
+}
+
+VALUE virtualmachine_vme_in(VALUE self)
+{
+	VALUE vctx = rb_iv_get(self, "@ctx");
+	VALUE vvme = rb_iv_get(self, "@vmexit");
+	struct vmctx *ctx;
+	struct vm_exit *vme;
+	Data_Get_Struct(vctx, struct vmctx, ctx);
+	if (!ctx)
+		rb_bug("ctx is null");
+	Data_Get_Struct(vvme, struct vm_exit, vme);
+	if (!vme)
+		tb_bug("vme is null");
+	return INT2FIX(vme->u.inout.in);
+}
+
+VALUE virtualmachine_vme_port(VALUE self)
+{
+	VALUE vctx = rb_iv_get(self, "@ctx");
+	VALUE vvme = rb_iv_get(self, "@vmexit");
+	struct vmctx *ctx;
+	struct vm_exit *vme;
+	Data_Get_Struct(vctx, struct vmctx, ctx);
+	if (!ctx)
+		rb_bug("ctx is null");
+	Data_Get_Struct(vvme, struct vm_exit, vme);
+	if (!vme)
+		tb_bug("vme is null");
+	return INT2FIX(vme->u.inout.port);
+}
+
+VALUE virtualmachine_vme_eax(VALUE self)
+{
+	VALUE vctx = rb_iv_get(self, "@ctx");
+	VALUE vvme = rb_iv_get(self, "@vmexit");
+	struct vmctx *ctx;
+	struct vm_exit *vme;
+	Data_Get_Struct(vctx, struct vmctx, ctx);
+	if (!ctx)
+		rb_bug("ctx is null");
+	Data_Get_Struct(vvme, struct vm_exit, vme);
+	if (!vme)
+		tb_bug("vme is null");
+	return INT2FIX(vme->u.inout.eax);
 }
 
 #define GETREG(func, reg) \
@@ -381,6 +518,13 @@ void Init_virtualmachine(void)
 	rb_define_method(rb_cVirtualMachine, "rip=", virtualmachine_set_rip, 1);
 	rb_define_method(rb_cVirtualMachine, "rflags=", virtualmachine_set_rflags, 1);
 	rb_define_method(rb_cVirtualMachine, "efer=", virtualmachine_set_efer, 1);
-
 	rb_define_method(rb_cVirtualMachine, "destroy", virtualmachine_destroy, 0);
+	rb_define_method(rb_cVirtualMachine, "run", virtualmachine_run, 1);
+	rb_define_method(rb_cVirtualMachine, "vme_exitcode", virtualmachine_vme_exitcode, 0);
+	rb_define_method(rb_cVirtualMachine, "vme_inst_length", virtualmachine_vme_inst_length, 0);
+	rb_define_method(rb_cVirtualMachine, "vme_rip", virtualmachine_vme_rip, 0);
+	rb_define_method(rb_cVirtualMachine, "vme_bytes", virtualmachine_vme_bytes, 0);
+	rb_define_method(rb_cVirtualMachine, "vme_in", virtualmachine_vme_in, 0);
+	rb_define_method(rb_cVirtualMachine, "vme_port", virtualmachine_vme_port, 0);
+	rb_define_method(rb_cVirtualMachine, "vme_eax", virtualmachine_vme_eax, 0);
 }
